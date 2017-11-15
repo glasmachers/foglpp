@@ -14,5 +14,5 @@ It is a header only library.
 
 ### Todo
 
-- Bind and usage checker checker
+- Bind and usage checker
 - Extensions
