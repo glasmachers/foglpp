@@ -2,8 +2,6 @@
 
 #include <fogl/shader.hpp>
 #include <fogl/cref.hpp>
-#include <fogl/cptr.hpp>
-#include <fogl/ptr.hpp>
 #include <fogl/obj.hpp>
 #include <fogl/flags.hpp>
 #include <fogl/gl.hpp>
@@ -16,12 +14,14 @@ namespace fogl {
   struct program_cref : cref {
     /// Status of the program.
     bool status() const {
+      assert(!this->is_null());
       GLint res = 0;
       glGetProgramiv(id(), GL_LINK_STATUS, &res);
       return res != 0;
     }
     /// Log of the program.
     std::string log() const {
+      assert(!this->is_null());
       int len;
       glGetProgramiv(id(), GL_INFO_LOG_LENGTH, &len);
       std::vector<char> buf(len + 1);
@@ -32,23 +32,25 @@ namespace fogl {
     }
     /// Attribute location by name.
     GLuint attribute_location(char const *name) const {
+      assert(!this->is_null());
       return glGetAttribLocation(id(), name);
     }
     /// Uniform location by name.
     GLuint uniform_location(char const *name) const {
+      assert(!this->is_null());
       return glGetUniformLocation(id(), name);
     }
     /// Use the program.
     void use() const {
       glUseProgram(id());
     }
-    /// Create from a given id.
+    /// Construct with null id.
+    program_cref() {
+    }
+    /// Construct from a given id.
     program_cref(from_id, GLuint id) : cref(from_id(), id) {
     }
-    /// Create without checking whether the id is valid.
-    program_cref(no_validity_check, GLuint id) : cref(no_validity_check(), id) {
-    }
-    /// Create with undefined id.
+    /// Construct with undefined id.
     program_cref(undefined) : cref(undefined()) {
     }
   };
@@ -57,40 +59,38 @@ namespace fogl {
   struct program_ref : program_cref {
     /// Attach a shader to the program.
     template<GLenum type> void attach_shader(shader_ref<type> s) const {
+      assert(!this->is_null());
       glAttachShader(id(), s.id());
       assert(glGetError() == 0);
     }
     /// Detach a shader from the program.
     template<GLenum type> void detach_shader(shader_ref<type> s) const {
+      assert(!this->is_null());
       glDetachShader(id(), s.id());
       assert(glGetError() == 0);
     }
     /// Link the attached shaders.
     void link() const {
+      assert(!this->is_null());
       glLinkProgram(id());
       assert(glGetError() == 0);
     }
-    /// Create from a given id.
+    /// Construct with null id.
+    program_ref() {
+    }
+    /// Construct from a given id.
     program_ref(from_id, GLuint id) : program_cref(from_id(), id) {
     }
-    /// Create without checking whether the id is valid.
-    program_ref(no_validity_check, GLuint id) : program_cref(no_validity_check(), id) {
-    }
-    /// Create with undefined id.
+    /// Construct with undefined id.
     program_ref(undefined) : program_cref(undefined()) {
     }
   };
-
-  /// C++ wrapper of a pointer to a constant opengl program.
-  using program_cptr = cptr<program_ref, program_cref>;
-  /// C++ wrapper of a pointer to a mutable opengl program.
-  using program_ptr = ptr<program_ref, program_cref>;
 
   /// C++ wrapper of an opengl program.
   struct program : obj<program, program_ref, program_cref> {
     /// Destroy the program.
     void destroy() {
-      if (!*this)
+      if (this->is_null())
         return;
       glDeleteProgram(id());
       invalidate();
@@ -99,7 +99,7 @@ namespace fogl {
     void create() {
       id(glCreateProgram());
     }
-    /// Construct with invalid id.
+    /// Construct with null id.
     program() {
     }
     /// Construct from a given id.
@@ -110,7 +110,7 @@ namespace fogl {
       create();
     }
     /// Construct with opengl buffer created
-    program(struct create, vertex_shader_ref& vs, fragment_shader_ref fs) {
+    program(vertex_shader_ref& vs, fragment_shader_ref fs) {
       create();
       (*this)->attach_shader(vs);
       (*this)->attach_shader(fs);

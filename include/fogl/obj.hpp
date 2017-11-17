@@ -7,15 +7,8 @@
 
 namespace fogl {
 
-  struct obj_base {
-  protected:
-    template<typename ref> static GLuint &ref_id(ref &r) {
-      return r.id();
-    }
-  };
-
   /// Base class of all C++ wrappers of an opengl object.
-  template<typename child, typename ref, typename cref> struct obj : obj_base {
+  template<typename child, typename ref, typename cref> struct obj {
   private:
     ref ref_;
   protected:
@@ -28,21 +21,18 @@ namespace fogl {
     obj<child, ref, cref>& operator=(obj<child, ref, cref>&& o) {
       reinterpret_cast<child*>(this)->destroy();
       id() = o.id();
-      o.id() = 0;
+      o.invalidate();
       return *this;
     }
-    /// Create with invalid id.
-    obj() : ref_(no_validity_check(), 0) {
+    /// Create with null id.
+    obj() {
     }
     /// Create from a given id.
-    obj(from_id, GLuint id) : ref_(no_validity_check(), id) {
-    }
-    /// Create from a given id.
-    obj(std::nullptr_t) : ref_(no_validity_check(), 0) {
+    obj(from_id, GLuint id) : ref_(from_id(), id) {
     }
     obj(const obj<child, ref, cref>&) = delete;
-    obj(obj<child, ref, cref>&& o) : ref_(no_validity_check(), o.id()) {
-      o.id() = 0;
+    obj(obj<child, ref, cref>&& o) : ref_(from_id(), o.id()) {
+      o.invalidate();
     }
     ~obj() {
       reinterpret_cast<child*>(this)->destroy();
@@ -55,41 +45,34 @@ namespace fogl {
     /// Set the id.
     void id(GLuint id) {
       reinterpret_cast<child*>(this)->destroy();
-      ref_.id(no_validity_check(), id);
+      ref_.id(id);
     }
+    /// Invalidate withour of destroying.
     void invalidate() {
-      ref_.id(no_validity_check(), 0);
+      ref_.id(0);
     }
-    /// Whether the id is valid.
+    /// Whether the id is not null.
     operator bool() const {
       return id() != 0;
     }
-    /// Convert to pointer.
-    operator cptr<ref, cref>() const {
-      return {from_id(), id()};
-    }
-    /// Convert to pointer.
-    operator ptr<ref, cref>() {
-      return {from_id(), id()};
+    /// Whether the id is null.
+    bool is_null() const {
+      return id() == 0;
     }
     /// Dereference.
     const cref *operator->() const {
-      assert(*this);
       return &ref_;
     }
     /// Dereference.
     cref operator*() const {
-      assert(*this);
       return ref_;
     }
     /// Dereference.
     const ref *operator->() {
-      assert(*this);
       return &ref_;
     }
     /// Dereference.
     ref operator*() {
-      assert(*this);
       return ref_;
     }
     /// Whether the id is invalid.

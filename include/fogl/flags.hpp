@@ -10,7 +10,5 @@ namespace fogl {
   struct create {};
   /// Used as a flag to construct a reference with an undefined id.
   struct undefined {};
-  /// Used as a flag to construct a reference without checking whether the id is valid.
-  struct no_validity_check {};
 
 }

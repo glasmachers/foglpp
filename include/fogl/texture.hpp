@@ -1,5 +1,8 @@
 #pragma once
 
+#include <fogl/cref.hpp>
+#include <fogl/obj.hpp>
+#include <fogl/flags.hpp>
 #include <fogl/gl.hpp>
 
 #include <cassert>
@@ -19,13 +22,13 @@ namespace fogl {
     void bind() const {
       glBindTexture(type, id());
     }
-    /// Create from a given id.
+    /// Construct with null id
+    texture_cref() {
+    }
+    /// Construct from a given id.
     texture_cref(from_id, GLuint id) : cref(from_id(), id) {
     }
-    /// Create without checking whether the id is valid.
-    texture_cref(no_validity_check, GLuint id) : cref(no_validity_check(), id) {
-    }
-    /// Create with undefined id.
+    /// Construct with undefined id.
     texture_cref(undefined) : cref(undefined()) {
     }
   };
@@ -35,6 +38,7 @@ namespace fogl {
     using texture_cref<type>::id;
     /// Set 2d image data of the texture.
     void img2d(GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type_, const GLvoid *data) const {
+      assert(!this->is_null());
       GLint prev_bound_id;
       glGetIntegerv(texture_type_to_binding(type), &prev_bound_id);
       glBindTexture(type, id());
@@ -43,6 +47,7 @@ namespace fogl {
       glBindTexture(type, prev_bound_id);
     }
     void set_params_edge_linear() const {
+      assert(!this->is_null());
       GLint prev_bound_id;
       glGetIntegerv(texture_type_to_binding(type), &prev_bound_id);
       glBindTexture(type, id());
@@ -54,6 +59,7 @@ namespace fogl {
       glBindTexture(type, prev_bound_id);
     }
     void gen_mipmaps() const {
+      assert(!this->is_null());
       GLint prev_bound_id;
       glGetIntegerv(texture_type_to_binding(type), &prev_bound_id);
       glBindTexture(type, id());
@@ -61,27 +67,22 @@ namespace fogl {
       assert(glGetError() == 0);
       glBindTexture(type, prev_bound_id);
     }
-    /// Create from a given id.
+    /// Construct with null id
+    texture_ref() {
+    }
+    /// Construct from a given id.
     texture_ref(from_id, GLuint id) : texture_cref<type>(from_id(), id) {
     }
-    /// Create without checking whether the id is valid.
-    texture_ref(no_validity_check, GLuint id) : texture_cref<type>(no_validity_check(), id) {
-    }
-    /// Create without checking whether the id is valid.
+    /// Construct without checking whether the id is valid.
     texture_ref(undefined) : texture_cref<type>(undefined()) {
     }
   };
-
-  /// C++ wrapper of a pointer to a constant opengl texture.
-  template<GLenum type> using texture_cptr = cptr<texture_ref<type>, texture_cref<type>>;
-  /// C++ wrapper of a pointer to a mutable opengl texture.
-  template<GLenum type> using texture_ptr = ptr<texture_ref<type>, texture_cref<type>>;
 
   /// C++ wrapper for an opengl texture.
   template<GLenum type> struct texture : obj<texture<type>, texture_ref<type>, texture_cref<type>> {
     /// Destroy the texture.
     void destroy() {
-      if (!*this)
+      if (this->is_null())
         return;
       GLuint id = this->id();
       glDeleteTextures(1, &id);
@@ -104,7 +105,7 @@ namespace fogl {
       create();
     }
     /// Construct with opengl buffer created and data set
-    texture(struct create, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type_, const GLvoid *data) {
+    texture(GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type_, const GLvoid *data) {
       create();
       (*this)->img2d(level, internalFormat, width, height, format, type_, data);
     }
@@ -114,10 +115,6 @@ namespace fogl {
   using texture2d_cref = texture_cref<GL_TEXTURE_2D>;
   /// C++ wrapper of a reference to a mutable opengl array buffer.
   using texture2dr_ref = texture_ref<GL_TEXTURE_2D>;
-  /// C++ wrapper of a pointer to a constant opengl array buffer.
-  using texture2d_cptr = texture_cptr<GL_TEXTURE_2D>;
-  /// C++ wrapper of a pointer to a mutable opengl array buffer.
-  using texture2d_ptr = texture_ptr<GL_TEXTURE_2D>;
   /// C++ wrapper of an 2d opengl texture.
   using texture2d = texture<GL_TEXTURE_2D>;
 

@@ -1,8 +1,6 @@
 #pragma once
 
 #include <fogl/cref.hpp>
-#include <fogl/cptr.hpp>
-#include <fogl/ptr.hpp>
 #include <fogl/obj.hpp>
 #include <fogl/flags.hpp>
 #include <fogl/gl.hpp>
@@ -18,12 +16,14 @@ namespace fogl {
   template<GLenum type> struct shader_cref : cref {
     /// Status of the shader.
     bool status() const {
+      assert(!this->is_null());
       GLint res = 0;
       glGetShaderiv(id(), GL_COMPILE_STATUS, &res);
       return res != 0;
     }
     /// Log of the shader.
     std::string log() const {
+      assert(!this->is_null());
       int len;
       glGetShaderiv(id(), GL_INFO_LOG_LENGTH, &len);
       std::vector<char> buf(len + 1);
@@ -32,13 +32,13 @@ namespace fogl {
       buf[len] = 0;
       return std::string(&buf[0]);
     }
-    /// Create from a given id.
+    /// Construct with null id.
+    shader_cref() {
+    }
+    /// Construct from a given id.
     shader_cref(from_id, GLuint id) : cref(from_id(), id) {
     }
-    /// Create without checking whether the id is valid.
-    shader_cref(no_validity_check, GLuint id) : cref(no_validity_check(), id) {
-    }
-    /// Create with undefined id.
+    /// Construct with undefined id.
     shader_cref(undefined) : cref(undefined()) {
     }
   };
@@ -48,6 +48,7 @@ namespace fogl {
     using shader_cref<type>::id;
     /// Set the shader source.
     void src(std::initializer_list<const char *> src) const {
+      assert(!this->is_null());
       std::string csrc;
       for (const char *s : src) {
         csrc += s;
@@ -61,21 +62,16 @@ namespace fogl {
       glCompileShader(id());
       assert(glGetError() == 0);
     }
-    /// Create from a given id.
+    /// Construct with null id.
+    shader_ref() {
+    }
+    /// Construct from a given id.
     shader_ref(from_id, GLuint id) : shader_cref<type>(from_id(), id) {
     }
-    /// Create without checking whether the id is valid.
-    shader_ref(no_validity_check, GLuint id) : shader_cref<type>(no_validity_check(), id) {
-    }
-    /// Create without checking whether the id is valid.
+    /// Construct with undefined id.
     shader_ref(undefined) : shader_cref<type>(undefined()) {
     }
   };
-
-  /// C++ wrapper of a pointer to a constant opengl shader.
-  template<GLenum type> using shader_cptr = cptr<shader_ref<type>, shader_cref<type>>;
-  /// C++ wrapper of a pointer to a mutable opengl shader.
-  template<GLenum type> using shader_ptr = ptr<shader_ref<type>, shader_cref<type>>;
 
   /// C++ wrapper of an opengl shader.
   template<GLenum type> struct shader : obj<shader<type>, shader_ref<type>, shader_cref<type>> {
@@ -92,6 +88,7 @@ namespace fogl {
     }
     /// Set the shader source.
     void src(std::initializer_list<const char *> src) {
+      assert(!this->is_null());
       std::string csrc;
       for (const char *s : src) {
         csrc += s;
@@ -102,10 +99,11 @@ namespace fogl {
     }
     /// Compile the shader.
     void compile() {
+      assert(!this->is_null());
       glCompileShader(this->id());
       assert(glGetError() == 0);
     }
-    /// Construct with invalid id.
+    /// Construct with null id.
     shader() {
     }
     /// Construct from a given id.
@@ -116,23 +114,20 @@ namespace fogl {
       create();
     }
     /// Construct with opengl buffer created
-    shader(struct create, const std::initializer_list<const char *>& src) {
+    shader(const std::initializer_list<const char *>& src) {
       create();
       (*this)->src(src);
       (*this)->compile();
     }
   };
+
   /// C++ wrapper of an opengl vertex shader.
   using vertex_shader = shader<GL_VERTEX_SHADER>;
   using vertex_shader_ref = shader_ref<GL_VERTEX_SHADER>;
   using vertex_shader_cref = shader_cref<GL_VERTEX_SHADER>;
-  using vertex_shader_ptr = shader_ptr<GL_VERTEX_SHADER>;
-  using vertex_shader_cptr = shader_cptr<GL_VERTEX_SHADER>;
   /// C++ wrapper of an opengl fragment shader.
   using fragment_shader = shader<GL_FRAGMENT_SHADER>;
   using fragment_shader_ref = shader_ref<GL_FRAGMENT_SHADER>;
   using fragment_shader_cref = shader_cref<GL_FRAGMENT_SHADER>;
-  using fragment_shader_ptr = shader_ptr<GL_FRAGMENT_SHADER>;
-  using fragment_shader_cptr = shader_cptr<GL_FRAGMENT_SHADER>;
 
 }
