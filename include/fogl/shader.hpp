@@ -3,6 +3,9 @@
 #include <fogl/cref.hpp>
 #include <fogl/obj.hpp>
 #include <fogl/flags.hpp>
+#include <fogl/check.hpp>
+#include <fogl/error.hpp>
+#include <fogl/exception.hpp>
 #include <fogl/gl.hpp>
 
 #include <initializer_list>
@@ -16,19 +19,19 @@ namespace fogl {
   template<GLenum type> struct shader_cref : cref {
     /// Status of the shader.
     bool status() const {
-      assert(!this->is_null());
+      this->auto_check_not_null();
       GLint res = 0;
-      glGetShaderiv(id(), GL_COMPILE_STATUS, &res);
+      glGetShaderiv(this->id(), GL_COMPILE_STATUS, &res);
       return res != 0;
     }
     /// Log of the shader.
     std::string log() const {
-      assert(!this->is_null());
+      this->auto_check_not_null();
       int len;
-      glGetShaderiv(id(), GL_INFO_LOG_LENGTH, &len);
+      glGetShaderiv(this->id(), GL_INFO_LOG_LENGTH, &len);
       std::vector<char> buf(len + 1);
       if (len > 0)
-        glGetShaderInfoLog(id(), len, NULL, &buf[0]);
+        glGetShaderInfoLog(this->id(), len, NULL, &buf[0]);
       buf[len] = 0;
       return std::string(&buf[0]);
     }
@@ -45,22 +48,22 @@ namespace fogl {
 
   /// C++ wrapper of a reference to a mutable opengl shader.
   template<GLenum type> struct shader_ref : shader_cref<type> {
-    using shader_cref<type>::id;
     /// Set the shader source.
     void src(std::initializer_list<const char *> src) const {
-      assert(!this->is_null());
+      this->auto_check_not_null();
       std::string csrc;
       for (const char *s : src) {
         csrc += s;
       };
       const char *s = csrc.c_str();
-      glShaderSource(id(), 1, &s, NULL);
-      assert(glGetError() == 0);
+      glShaderSource(this->id(), 1, &s, NULL);
+      auto_check_error();
     }
     /// Compile the shader.
     void compile() const {
-      glCompileShader(id());
-      assert(glGetError() == 0);
+      this->auto_check_not_null();
+      glCompileShader(this->id());
+      auto_check_error();
     }
     /// Construct with null id.
     shader_ref() {
@@ -85,6 +88,7 @@ namespace fogl {
     /// Create the shader
     void create() {
       this->id(glCreateShader(type));
+      auto_check_error();
     }
     /// Set the shader source.
     void src(std::initializer_list<const char *> src) {

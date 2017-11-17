@@ -4,6 +4,9 @@
 #include <fogl/cref.hpp>
 #include <fogl/obj.hpp>
 #include <fogl/flags.hpp>
+#include <fogl/check.hpp>
+#include <fogl/error.hpp>
+#include <fogl/exception.hpp>
 #include <fogl/gl.hpp>
 
 #include <cassert>
@@ -14,30 +17,30 @@ namespace fogl {
   struct program_cref : cref {
     /// Status of the program.
     bool status() const {
-      assert(!this->is_null());
+      this->auto_check_not_null();
       GLint res = 0;
       glGetProgramiv(id(), GL_LINK_STATUS, &res);
       return res != 0;
     }
     /// Log of the program.
     std::string log() const {
-      assert(!this->is_null());
+      this->auto_check_not_null();
       int len;
       glGetProgramiv(id(), GL_INFO_LOG_LENGTH, &len);
       std::vector<char> buf(len + 1);
       if (len > 0)
-        glGetProgramInfoLog(id(), len, NULL, &buf[0]);
+        glGetProgramInfoLog(id(), len, nullptr, &buf[0]);
       buf[len] = 0;
       return std::string(&buf[0]);
     }
     /// Attribute location by name.
     GLuint attribute_location(char const *name) const {
-      assert(!this->is_null());
+      this->auto_check_not_null();
       return glGetAttribLocation(id(), name);
     }
     /// Uniform location by name.
     GLuint uniform_location(char const *name) const {
-      assert(!this->is_null());
+      this->auto_check_not_null();
       return glGetUniformLocation(id(), name);
     }
     /// Use the program.
@@ -59,21 +62,21 @@ namespace fogl {
   struct program_ref : program_cref {
     /// Attach a shader to the program.
     template<GLenum type> void attach_shader(shader_ref<type> s) const {
-      assert(!this->is_null());
+      this->auto_check_not_null();
       glAttachShader(id(), s.id());
-      assert(glGetError() == 0);
+      auto_check_error();
     }
     /// Detach a shader from the program.
     template<GLenum type> void detach_shader(shader_ref<type> s) const {
-      assert(!this->is_null());
+      this->auto_check_not_null();
       glDetachShader(id(), s.id());
-      assert(glGetError() == 0);
+      auto_check_error();
     }
     /// Link the attached shaders.
     void link() const {
-      assert(!this->is_null());
+      this->auto_check_not_null();
       glLinkProgram(id());
-      assert(glGetError() == 0);
+      auto_check_error();
     }
     /// Construct with null id.
     program_ref() {
@@ -115,6 +118,8 @@ namespace fogl {
       (*this)->attach_shader(vs);
       (*this)->attach_shader(fs);
       (*this)->link();
+      (*this)->detach_shader(vs);
+      (*this)->detach_shader(fs);
     }
   };
 

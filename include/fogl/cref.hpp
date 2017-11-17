@@ -1,6 +1,9 @@
 #pragma once
 
 #include <fogl/flags.hpp>
+#include <fogl/check.hpp>
+#include <fogl/error.hpp>
+#include <fogl/exception.hpp>
 #include <fogl/gl.hpp>
 
 namespace fogl {
@@ -39,6 +42,17 @@ namespace fogl {
     /// Whether the id is not null.
     operator bool() const {
       return id_ != 0;
+    }
+    /// Check whether the id is not null. If it is null, throw a null_id exception.
+    void check_not_null() const {
+      if (is_null())
+        throw null_id();
+    }
+    /// If auro null checking is enabled, check whether the id is not null. If it is null, throw a null_id exception.
+    void auto_check_not_null() const {
+#ifdef FOGL_AUTO_NULL_CHECKING
+      check_not_null();
+#endif
     }
   };
 
